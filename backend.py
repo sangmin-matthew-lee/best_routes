@@ -23,7 +23,6 @@ app = FastAPI (
     version="1.0.0",
 )
 
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"], 
@@ -105,6 +104,9 @@ def optimize_routes(addresses: List[str], start: str, end: str):
 
     return optimized_routes_based_on_distance, optimized_routes_based_on_time
 
+@app.get("/")
+def root():
+    return {"message": "Welcome to the Best Routes App!"}
 
 @app.post("/api/users/register")
 def register(register_user: Register, db : sqlite3.Connection = Depends(get_db)):

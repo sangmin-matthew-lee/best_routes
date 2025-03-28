@@ -123,7 +123,7 @@ def register(register_user: Register, db : sqlite3.Connection = Depends(get_db))
 
 
 @app.post("/api/users/login")
-def register(login_user: Login, db : sqlite3.Connection = Depends(get_db)):
+def login(login_user: Login, db : sqlite3.Connection = Depends(get_db)):
     cursor = db.execute("SELECT id, username, password FROM users WHERE username = ?", (login_user.username, ))
     row = cursor.fetchone()
     
@@ -211,6 +211,8 @@ def request_optimize_route(optimize_route_request : OptimizeRoutesRequest, db: s
     actual_addresses = []
     for address_id in optimize_route_request.address_ids:
         address = get_address_by_id(db,address_id)
+        if not address:
+            raise HTTPException(status_code=404, detail= f"Address ID {address_id} is not found")
         actual_addresses.append(address)
     
     if not actual_addresses:
@@ -245,19 +247,26 @@ def request_optimize_route(optimize_route_request : OptimizeRoutesRequest, db: s
 
     print(f"The best route for distance is: {route_distance}")
     print(f"The best route for time is: {route_time}")
+    if optimize_route_request:
+        message = "Routes have been saved to the database"
+    else:
+        message = "Routes are saved (Guest's request)"
+
     output = {
         "Optimized based on distance": route_distance,
-        "Optimized based on time" : route_time
+        "Optimized based on time" : route_time,
+        "message" : message
     }
+
     return output
 
 @app.get("/api/users/{user_id}/records")
 def get_records(user_id :int, db:sqlite3.Connection = Depends(get_db)):
     cursor = db.execute("SELECT * FROM routes WHERE user_id = ?", (user_id,))
     rows = cursor.fetchall()
-
+    
     if not rows:
-        raise HTTPException(status_code=400, detail="records not found")
+        raise HTTPException(status_code=400, detail="Routes are not found")
 
     records = []
     for row in rows:
@@ -268,6 +277,8 @@ def get_records(user_id :int, db:sqlite3.Connection = Depends(get_db)):
 
 @app.get("/api/users/{user_id}/records/{route_id}")
 def get_record_by_id(user_id:int, route_id:int, db:sqlite3.Connection = Depends(get_db)):
+    # The user_id input error is not handled since only logged-in users can use this method
+    # When the user log in, the app will know the user_id
     cursor = db.execute("SELECT * FROM routes WHERE route_id = ? AND user_id = ?", (route_id, user_id))
     row = cursor.fetchone()
 

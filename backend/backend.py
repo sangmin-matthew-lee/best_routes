@@ -41,10 +41,13 @@ class Login(BaseModel):
     password : str
 
 class OptimizeRoutesRequest(BaseModel):
-    address_ids : List[int]
-    start_address_id : int
-    stop_address_id : int
+    address_ids : List[int] #For logged-in users
+    start_address_id : int = None
+    stop_address_id : int = None
     user_id : int = None    #Need to change only when user log in
+    raw_addresses : List[str] = [] #For guest users
+    raw_start : str = None
+    raw_stop : str = None
 
 #Database
 def get_db():
@@ -171,7 +174,7 @@ def get_user_by_id(user_id:int, db: sqlite3.Connection = Depends(get_db)):
 
 #===============For testing start===============
 @app.get("/api/addresses")
-def get_all_address(db:sqlite3.Connection = Depends(get_db)):
+def get_all_address_testing(db:sqlite3.Connection = Depends(get_db)):
     cursor = db.execute("SELECT id, address FROM addresses")
     rows = cursor.fetchall()
     print(rows)
@@ -186,7 +189,7 @@ def get_all_address(db:sqlite3.Connection = Depends(get_db)):
     return {"addresses": addresses}
     
 @app.get("/api/addresses/{address_id}")
-def get_address_by_id_t(address_id:int, db: sqlite3.Connection = Depends(get_db)):
+def get_address_by_id_testing(address_id:int, db: sqlite3.Connection = Depends(get_db)):
     cursor = db.execute("SELECT id, address FROM addresses WHERE id = ? ", (address_id,))
     row =cursor.fetchone()
 
@@ -207,52 +210,63 @@ def add_address_to_db(address:str, db:sqlite3.Connection = Depends(get_db)):
 
 @app.post("/api/routes/optimize/")
 def request_optimize_route(optimize_route_request : OptimizeRoutesRequest, db: sqlite3.Connection = Depends(get_db)):
-    #1. Get all actual address by address_id
-    actual_addresses = []
-    for address_id in optimize_route_request.address_ids:
-        address = get_address_by_id(db,address_id)
-        if not address:
-            raise HTTPException(status_code=404, detail= f"Address ID {address_id} is not found")
-        actual_addresses.append(address)
-    
-    if not actual_addresses:
-        raise HTTPException(status_code=400, detail="At least one address id is invalid.")
+    if optimize_route_request.user_id:
+        #1. Get all actual address by address_id
+        actual_addresses = []
+        for address_id in optimize_route_request.address_ids:
+            address = get_address_by_id(db,address_id)
+            if not address:
+                raise HTTPException(status_code=404, detail= f"Address ID {address_id} is not found")
+            actual_addresses.append(address)
+        
+        #Do I need this? once for loop is done, actual_addresses list will not None
+        if not actual_addresses:
+            raise HTTPException(status_code=400, detail="At least one address id is invalid.")
 
-    #2. Set start and end addresses
-    start_address =  get_address_by_id(db, optimize_route_request.start_address_id)
-    stop_address =  get_address_by_id(db, optimize_route_request.stop_address_id)
+        #2. Set start and end addresses
+        start_address =  get_address_by_id(db, optimize_route_request.start_address_id)
+        stop_address =  get_address_by_id(db, optimize_route_request.stop_address_id)
 
-    if not start_address:
-        raise HTTPException(status_code=400, detail="Invalid start address id")
-    if not stop_address:
-        raise HTTPException(status_code=400, detail="Invalid stop address id")
+        if not start_address:
+            raise HTTPException(status_code=400, detail="Invalid start address id")
+        if not stop_address:
+            raise HTTPException(status_code=400, detail="Invalid stop address id")
     
+    else:
+        actual_addresses = optimize_route_request.raw_addresses
+        start_address = optimize_route_request.raw_start
+        stop_address = optimize_route_request.raw_stop
+
+        if not actual_addresses or start_address or stop_address:
+            raise HTTPException(status_code=400, detail="Missing addfress information for the guest user.")
+        
     #get optimized routes using Google Maps API. Note:Return to JSON file
     route_distance, route_time = optimize_routes(actual_addresses,start_address,stop_address)
 
     #Save the routes if user log in
-    address_ids = ",".join(map(str,optimize_route_request.address_ids))
     if optimize_route_request.user_id:
-        db.execute("INSERT INTO routes (user_id, start_id, end_id, address_ids, distance_route, time_route) VALUES (?, ?, ?, ?, ?, ?)",
-                        (
-                        optimize_route_request.user_id,
-                        optimize_route_request.start_address_id,
-                        optimize_route_request.stop_address_id,
-                        address_ids,
-                        str(route_distance),
-                        str(route_time)
-                        ) 
-                   )
-        db.commit()
+        address_ids = ",".join(map(str,optimize_route_request.address_ids))
+        if optimize_route_request.user_id:
+            db.execute("INSERT INTO routes (user_id, start_id, end_id, address_ids, distance_route, time_route) VALUES (?, ?, ?, ?, ?, ?)",
+                            (
+                            optimize_route_request.user_id,
+                            optimize_route_request.start_address_id,
+                            optimize_route_request.stop_address_id,
+                            address_ids,
+                            str(route_distance),
+                            str(route_time)
+                            ) 
+                    )
+            db.commit()
+            message = "Routes have been saved to the database"
+        else:
+            message = "Guest request - Routes are not saved to the database "
 
     print(f"The best route for distance is: {route_distance}")
     print(f"The best route for time is: {route_time}")
-    if optimize_route_request:
-        message = "Routes have been saved to the database"
-    else:
-        message = "Routes are saved (Guest's request)"
 
     output = {
+        "User_id": optimize_route_request.user_id,
         "Optimized based on distance": route_distance,
         "Optimized based on time" : route_time,
         "message" : message

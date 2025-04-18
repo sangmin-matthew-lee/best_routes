@@ -1,0 +1,75 @@
+/* Base layout styles */
+body {
+  margin: 0;
+  font-family: Arial, sans-serif;
+}
+
+/* Header */
+header {
+  background-color: white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  padding: 1rem;
+}
+
+/* Flex layout */
+.header-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Nav links */
+nav a {
+  margin-left: 1rem;
+  color: #0070f3;
+  text-decoration: none;
+}
+
+nav a:hover {
+  text-decoration: underline;
+}
+
+/* Buttons */
+button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button.login {
+  background-color: green;
+  color: white;
+}
+
+button.logout {
+  background-color: red;
+  color: white;
+}
+
+button.signup {
+  background-color: #eee;
+  color: #333;
+}
+
+.search-input {
+  width: 100%;
+  max-width: 600px;   /* wider */
+  height: 56px;        /* taller */
+  padding: 0 20px;
+  font-size: 18px;
+  border: 2px solid #ccc;
+  border-radius: 999px;  /* pill shape */
+  outline: none;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  transition: all 0.2s ease;
+  margin-bottom: 20px;
+  margin-left: 80px;
+}
+
+.search-input:focus {
+  border-color: #0070f3;
+  box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.2);
+}

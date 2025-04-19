@@ -48,12 +48,11 @@ const RouteOptimizer: React.FC = () => {
     navigate("/");
   };
 
-//   const handleAddAddress = () => {
-//     if (addresses.length < 2) {
-//       alert("Please enter at least two addresses.");
-//       return;
-//     }
-//   };
+  const routeOptimization = () => {
+    if (addresses.length < 2) {
+      alert("Please enter at least two addresses.");
+      return;
+    }
   
     const payload = {
       raw_addresses: addresses.slice(1, -1),
@@ -65,7 +64,7 @@ const RouteOptimizer: React.FC = () => {
       user_id: localStorage.getItem("user_id"),
     };
     
-      axios
+    axios
         .post(`${API_URL}/api/routes/optimize/`, payload)
         .then((res) => {
           setResult(res.data);
@@ -74,7 +73,7 @@ const RouteOptimizer: React.FC = () => {
         .catch((err) =>
           alert(err.response?.data?.detail || "Route optimization failed")
         );
-
+    };
 
   const drawRoute = async (orderedAddresses: string[]) => {
     const directionsService = new google.maps.DirectionsService();
@@ -176,7 +175,9 @@ const RouteOptimizer: React.FC = () => {
         </div>
 
         <div className="flex justify-start mt-4 gap-2" style={{ width: "90%", margin: "0 auto" }}>
-          <button className="bg-black text-white px-4 py-2 rounded shadow">Find Route</button>
+          <button 
+          className="bg-black text-white px-4 py-2 rounded shadow"
+          onClick={routeOptimization}>Find Route</button>
           <button className="bg-gray-300 px-4 py-2 rounded">Download</button>
           <button className="bg-gray-300 px-4 py-2 rounded">Print</button>
           <button className="bg-gray-300 px-4 py-2 rounded">Share</button>

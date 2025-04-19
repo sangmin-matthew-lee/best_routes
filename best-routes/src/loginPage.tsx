@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const Login: React.FC = () => {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -10,7 +12,7 @@ const Login: React.FC = () => {
 
   const login = () => {
     axios
-      .post("http://localhost:8000/api/users/login", {
+      .post(`${API_URL}/api/users/login`, {
         username,
         password,
       })

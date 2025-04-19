@@ -10,6 +10,8 @@ import { useNavigate, Link } from "react-router-dom";
 //import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import './index.css';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 const containerStyle = {
   width: "90%",
   height: "700px",
@@ -64,7 +66,7 @@ const RouteOptimizer: React.FC = () => {
     };
     
       axios
-        .post("http://localhost:8000/api/routes/optimize/", payload)
+        .post(`${API_URL}/api/routes/optimize/`, payload)
         .then((res) => {
           setResult(res.data);
           drawRoute(res.data["Optimized based on distance"]);

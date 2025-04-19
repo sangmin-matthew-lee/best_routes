@@ -7,7 +7,7 @@ import {
   StandaloneSearchBox,
 } from "@react-google-maps/api";
 import { useNavigate, Link } from "react-router-dom";
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+//import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import './index.css';
 
 const containerStyle = {
@@ -25,7 +25,7 @@ const RouteOptimizer: React.FC = () => {
   const [username, setUsername] = useState<string | null>(null);
   const [addresses, setAddresses] = useState<string[]>([]);
   const [searchBox, setSearchBox] = useState<google.maps.places.SearchBox | null>(null);
-  const [result, setResult] = useState<any>(null);
+  const [setResult] = useState<any>(null);
   const [directions, setDirections] = useState<any>(null);
   const navigate = useNavigate();
   //const [loading, setLoading] = useState(true);
@@ -46,12 +46,13 @@ const RouteOptimizer: React.FC = () => {
     navigate("/");
   };
 
-  const handleAddAddress = () => {
-    if (addresses.length < 2) {
-      alert("Please enter at least two addresses.");
-      return;
-    }
-
+//   const handleAddAddress = () => {
+//     if (addresses.length < 2) {
+//       alert("Please enter at least two addresses.");
+//       return;
+//     }
+//   };
+  
     const payload = {
       raw_addresses: addresses.slice(1, -1),
       raw_start: addresses[0],
@@ -61,7 +62,7 @@ const RouteOptimizer: React.FC = () => {
       stop_address_id: null,
       user_id: localStorage.getItem("user_id"),
     };
-
+    
       axios
         .post("http://localhost:8000/api/routes/optimize/", payload)
         .then((res) => {
@@ -71,7 +72,7 @@ const RouteOptimizer: React.FC = () => {
         .catch((err) =>
           alert(err.response?.data?.detail || "Route optimization failed")
         );
-    };
+
 
   const drawRoute = async (orderedAddresses: string[]) => {
     const directionsService = new google.maps.DirectionsService();
@@ -106,18 +107,18 @@ const RouteOptimizer: React.FC = () => {
     }
   };
 
-  const onDragEnd = (result: any) => {
-    if (!result.destination) return;
-    const reordered_addr = Array.from(addresses);
-    const [removed] = reordered_addr.splice(result.source.index, 1);
-    reordered_addr.splice(result.destination.index, 0, removed);
-    setAddresses(reordered_addr);
-  };
+//   const onDragEnd = (result: any) => {
+//     if (!result.destination) return;
+//     const reordered_addr = Array.from(addresses);
+//     const [removed] = reordered_addr.splice(result.source.index, 1);
+//     reordered_addr.splice(result.destination.index, 0, removed);
+//     setAddresses(reordered_addr);
+//   };
 
-  const removeAddress = (index: number) => {
-    const updated_addr = addresses.filter((_, i) => i !== index);
-    setAddresses(updated_addr);
-  };
+//   const removeAddress = (index: number) => {
+//     const updated_addr = addresses.filter((_, i) => i !== index);
+//     setAddresses(updated_addr);
+//   };
 
   return (
     <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY!} libraries={["places"]}>

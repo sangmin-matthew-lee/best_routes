@@ -25,7 +25,7 @@ const RouteOptimizer: React.FC = () => {
   const [username, setUsername] = useState<string | null>(null);
   const [addresses, setAddresses] = useState<string[]>([]);
   const [searchBox, setSearchBox] = useState<google.maps.places.SearchBox | null>(null);
-  const [setResult] = useState<any>(null);
+  const [,setResult] = useState<any>(null);
   const [directions, setDirections] = useState<any>(null);
   const navigate = useNavigate();
   //const [loading, setLoading] = useState(true);

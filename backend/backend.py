@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List
 from database import initialize_db 
+from typing import Optional
 import sqlite3
 import requests
 import hashlib
@@ -41,13 +42,14 @@ class Login(BaseModel):
     password : str
 
 class OptimizeRoutesRequest(BaseModel):
-    address_ids : List[int] #For logged-in users
-    start_address_id : int = None
-    stop_address_id : int = None
-    user_id : int = None    #Need to change only when user log in
+    raw_start : Optional[str] = None
+    raw_stop : Optional[str] = None
     raw_addresses : List[str] = [] #For guest users
-    raw_start : str = None
-    raw_stop : str = None
+    address_ids : List[int] #For logged-in users
+    start_address_id : Optional[int] = None
+    stop_address_id : Optional[int] = None
+    user_id : Optional[int] = None    #Need to change only when user log in
+
 
 #Database
 def get_db():
@@ -73,6 +75,7 @@ def encrypt_password(password:str) -> str:
 #https://developers.google.com/maps/documentation/directions/get-directions
 def optimize_routes(addresses: List[str], start: str, end: str):
     waypoints = "|".join(addresses)
+
     #Get shortest distance routes
     optimize_distance_base = f"https://maps.googleapis.com/maps/api/directions/json?origin={start}&destination={end}&waypoints=optimize:true|{waypoints}&key={GOOGLE_MAPS_PLATFORM_API_KEY}"
     
@@ -81,6 +84,9 @@ def optimize_routes(addresses: List[str], start: str, end: str):
     
     #Replacing to distance routes request
     optimize_time_base = f"https://maps.googleapis.com/maps/api/directions/json?origin={start}&destination={end}&waypoints=optimize:true|{waypoints}&key={GOOGLE_MAPS_PLATFORM_API_KEY}"
+
+    print(f"🌐 Requesting distance route:\n{optimize_distance_base}")
+    print(f"🌐 Requesting time route:\n{optimize_time_base}")
 
     distance = requests.get(optimize_distance_base).json()
     time = requests.get(optimize_time_base).json()
@@ -94,16 +100,18 @@ def optimize_routes(addresses: List[str], start: str, end: str):
     if time["routes"]:
         only_addresses_time = time["routes"][0]["waypoint_order"]
     else:
-        only_addresses_distance = []
+        only_addresses_time = []
 
     #get ordered formatted addresses
-    optimized_routes_based_on_distance = []
+    optimized_routes_based_on_distance = [start]
     for i in only_addresses_distance:
         optimized_routes_based_on_distance.append(addresses[i])
-    
-    optimized_routes_based_on_time = []
+    optimized_routes_based_on_distance.append(end)
+
+    optimized_routes_based_on_time = [start]
     for i in only_addresses_time:
         optimized_routes_based_on_time.append(addresses[i])
+    optimized_routes_based_on_time.append(end)
 
     return optimized_routes_based_on_distance, optimized_routes_based_on_time
 
@@ -237,7 +245,7 @@ def request_optimize_route(optimize_route_request : OptimizeRoutesRequest, db: s
         start_address = optimize_route_request.raw_start
         stop_address = optimize_route_request.raw_stop
 
-        if not actual_addresses or start_address or stop_address:
+        if not actual_addresses or not start_address or not stop_address:
             raise HTTPException(status_code=400, detail="Missing addfress information for the guest user.")
         
     #get optimized routes using Google Maps API. Note:Return to JSON file
@@ -259,12 +267,12 @@ def request_optimize_route(optimize_route_request : OptimizeRoutesRequest, db: s
                     )
             db.commit()
             message = "Routes have been saved to the database"
-        else:
-            message = "Guest request - Routes are not saved to the database "
+    else:
+        message = "Guest request - Routes are not saved to the database "
 
     print(f"The best route for distance is: {route_distance}")
     print(f"The best route for time is: {route_time}")
-
+    
     output = {
         "User_id": optimize_route_request.user_id,
         "Optimized based on distance": route_distance,

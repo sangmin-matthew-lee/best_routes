@@ -73,3 +73,95 @@ button.signup {
   border-color: #0070f3;
   box-shadow: 0 0 0 3px rgba(0, 112, 243, 0.2);
 }
+
+/* ─────────────────────────────────────────────────────────
+   Auth pages (Log-in / Register)
+───────────────────────────────────────────────────────── */
+
+/* Full‑screen flex wrapper to center the form */
+.auth-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background-color: #f3f4f6; /* light grey page bg */
+}
+
+/* The “card” around your form */
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  background: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Heading inside the card */
+.auth-card h2 {
+  margin-bottom: 1.5rem;
+  font-size: 1.75rem;
+  text-align: center;
+  color: #111827;
+}
+
+/* Space out each form row */
+.auth-card form > div {
+  margin-bottom: 1rem;
+}
+
+/* Labels for inputs */
+.auth-card label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+/* Text inputs */
+.auth-card input[type="text"],
+.auth-card input[type="password"] {
+  width: 93%;
+  padding: 0.75rem;
+  border: 1px solid #d1d5db;
+  border-radius: 4px;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.auth-card input:focus {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+/* Submit button */
+.auth-card button[type="submit"] {
+  width: 100%;
+  padding: 0.75rem;
+  background-color: #3b82f6;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.auth-card button[type="submit"]:hover {
+  background-color: #2563eb;
+}
+
+/* Alternate link below form */
+.auth-card .login-link {
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.auth-card .login-link a {
+  color: #3b82f6;
+  text-decoration: none;
+}

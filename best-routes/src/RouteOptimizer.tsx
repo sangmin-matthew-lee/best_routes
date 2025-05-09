@@ -39,7 +39,17 @@ const RouteOptimizer: React.FC = () => {
   const [sidebarVisible, setSidebarVisible] = useState<boolean>(false);
   const [sidebarMode, setSidebarMode] = useState<'added' | 'optimized'>('added');
   const [sidebarAddresses, setSidebarAddresses] = useState<{ id: number; address: string }[]>([]);
-
+    
+  const [recordSidebarVisible, setRecordSidebarVisible] = useState(false);
+  const [routeRecords, setRouteRecords] = useState<string[][]>([]);  // Each record is an array of strings
+  
+  useEffect(() => {
+    const shouldReload = sessionStorage.getItem("shouldReload");
+    if (shouldReload === "true") {
+      sessionStorage.removeItem("shouldReload");
+      window.location.reload(); // Only happens once
+    }
+  }, []);
 
   useEffect(() => {
     const storedUsername = localStorage.getItem("username");
@@ -70,15 +80,25 @@ const RouteOptimizer: React.FC = () => {
     const rawUserId = localStorage.getItem("user_id");
     const user_id = rawUserId? parseInt(rawUserId, 10) : null
 
-    const payload = {
-      raw_start: addresses[0].address,
-      raw_stop: addresses[addresses.length - 1].address,
-      raw_addresses: addresses.length > 2 ? addresses.slice(1, -1).map(a => a.address) : [],
-      address_ids: [],
-      start_address_id: null,
-      stop_address_id: null,
-      user_id: user_id,
-    };
+    let payload = {};
+    if (user_id) {
+        payload = {
+            address_ids: addresses.slice(1,-1).map(a=> a.id),
+            start_address_id: addresses[0].id,
+            stop_address_id: addresses[addresses.length -1].id,
+            user_id: user_id,
+        };
+    } else {
+        payload = {
+            raw_start: addresses[0].address,
+            raw_stop: addresses[addresses.length - 1].address,
+            raw_addresses: addresses.length > 2 ? addresses.slice(1, -1).map(a => a.address) : [],
+            address_ids: [],
+            start_address_id: null,
+            stop_address_id: null,
+            user_id: null,
+        };
+    }
     console.log("Sending to backend:", payload); 
 
     axios
@@ -174,12 +194,34 @@ const RouteOptimizer: React.FC = () => {
     const deleteBtn = document.getElementById(`delete-btn-${markerId}`);
 
     if (addBtn) {
-      addBtn.addEventListener('click', () => {
-        setAddresses(prev => [...prev, {id: selected.id, address: selected.address}]);
-        setSidebarAddresses(prev => [...prev, {id: selected.id, address: selected.address}]);
+      addBtn.addEventListener('click', async () => {
+        try {
+            const user_id = localStorage.getItem("user_id");
+            let new_id = markerIdRef.current++;
+
+            if (user_id) {
+                const res = await axios.post(`${API_URL}/api/address/`, {address: selected.address}, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+                new_id = res.data.address_id
+            }
+
+        const new_id_and_address = {id: new_id, address: selected.address};
+        
+        setAddresses(prev => [...prev, new_id_and_address]);
+        setSidebarAddresses(prev => [...prev, new_id_and_address]);
+        
+        //setAddresses(prev => [...prev, {id: selected.id, address: selected.address}]);
+        //setSidebarAddresses(prev => [...prev, {id: selected.id, address: selected.address}]);
         setSidebarMode('added');
         setSidebarVisible(true);
         infoWindow.close();
+        } catch (err:any){
+            console.error("Failed to add address:", err?.response?.data || err.message || err);
+            alert("Failed to add address")
+        }
       });
     }
 
@@ -216,9 +258,37 @@ const RouteOptimizer: React.FC = () => {
         localStorage.removeItem("temp_addresses");
     };
 
+    const handleRecordClick = async () => {
+        const rawUserId = localStorage.getItem("user_id");
+        if (!rawUserId) {
+          alert("You need to log in");
+          return;
+        }
+      
+        const user_id = parseInt(rawUserId, 10);
+      
+        try {
+          const res = await axios.get(`${API_URL}/api/users/${user_id}/records`);
+          const records = res.data.route;
+      
+          if (!records || records.length === 0) {
+            alert("No Data");
+            return;
+          }
+      
+          const parsed = records.map((r: any) => JSON.parse(r.distance_route));
+          setRouteRecords(parsed.reverse()); // Most recent first
+          setRecordSidebarVisible(true);
+        } catch (err) {
+          console.error(err);
+          alert("Failed to load route records.");
+        }
+      };
+      
   return (
     <LoadScript googleMapsApiKey={import.meta.env.VITE_GOOGLE_MAPS_API_KEY!} libraries={["places"]}>
       <div className="relative min-h-screen">
+
         <header>
           <div className="header-container">
             <div className="logo-nav">
@@ -239,6 +309,13 @@ const RouteOptimizer: React.FC = () => {
                 <>
                   <span style={{ marginRight: '0.5rem' }}>Welcome, {username}</span>
                   <button className="logout" onClick={logout}>Log Out</button>
+                  <button
+                    className="record-btn"
+                    style={{ marginLeft: '0.5rem', background: '#eee', padding: '6px 12px', borderRadius: '4px' }}
+                    onClick={handleRecordClick}
+                    >
+                    Record
+                    </button>
                 </>
               ) : (
                 <>
@@ -249,6 +326,7 @@ const RouteOptimizer: React.FC = () => {
             </div>
           </div>
         </header>
+
 
         <div style={{ display: "flex", justifyContent: "flex-start", marginTop: "1rem", marginBottom: "1rem", paddingLeft: "5%" }}>
           <div style={{
@@ -351,6 +429,33 @@ const RouteOptimizer: React.FC = () => {
                     : undefined        
                 }
             />
+            )}
+        {recordSidebarVisible && (
+            <Sidebar
+                headerText="Your Previous Routes"
+                entries={routeRecords.map((route, idx) => ({
+                id: idx,
+                address: route.join(" → ")
+                }))}
+                onRemove={undefined}
+            >
+                <button
+                onClick={() => setRecordSidebarVisible(false)}
+                style={{
+                    position: 'absolute',
+                    bottom: '10px',
+                    right: '16px',
+                    background: 'transparent',
+                    border: 'none',
+                    fontSize: '1.2rem',
+                    fontWeight: 'bold',
+                    cursor: 'pointer',
+                    color: 'black'
+                }}
+                >
+                Close
+                </button>
+            </Sidebar>
             )}
       </div>
     </LoadScript>

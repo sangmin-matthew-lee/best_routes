@@ -18,6 +18,8 @@ const Login: React.FC = () => {
       );
       localStorage.setItem("user_id", res.data.user_id);
       localStorage.setItem("username", res.data.username);
+      
+      sessionStorage.setItem("shouldReload", "true");
       navigate("/");
     } catch (err: any) {
       alert(err.response?.data.detail || "Login failed");

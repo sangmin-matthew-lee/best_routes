@@ -9,6 +9,7 @@ import sqlite3
 import requests
 import hashlib
 import os
+import json
 
 # Initialize database
 initialize_db()
@@ -40,6 +41,9 @@ class Register(BaseModel):
 class Login(BaseModel):
     username : str
     password : str
+
+class Address(BaseModel):
+    address: str
 
 class OptimizeRoutesRequest(BaseModel):
     raw_start : Optional[str] = None
@@ -209,8 +213,8 @@ def get_address_by_id_testing(address_id:int, db: sqlite3.Connection = Depends(g
 #===============For testing end===============
 
 @app.post("/api/address/")
-def add_address_to_db(address:str, db:sqlite3.Connection = Depends(get_db)):
-    cursor = db.execute("INSERT INTO addresses (address) VALUES (?)", (address,))
+def add_address_to_db(address:Address, db:sqlite3.Connection = Depends(get_db)):
+    cursor = db.execute("INSERT INTO addresses (address) VALUES (?)", (address.address,))
     db.commit()
 
     print(f"address ID - {cursor.lastrowid}")
@@ -261,8 +265,10 @@ def request_optimize_route(optimize_route_request : OptimizeRoutesRequest, db: s
                             optimize_route_request.start_address_id,
                             optimize_route_request.stop_address_id,
                             address_ids,
-                            str(route_distance),
-                            str(route_time)
+                            #str(route_distance),
+                            #str(route_time)
+                            json.dumps(route_distance),
+                            json.dumps(route_time)
                             ) 
                     )
             db.commit()
@@ -288,7 +294,7 @@ def get_records(user_id :int, db:sqlite3.Connection = Depends(get_db)):
     rows = cursor.fetchall()
     
     if not rows:
-        raise HTTPException(status_code=400, detail="Routes are not found")
+        return {"route":[]}
 
     records = []
     for row in rows:

@@ -37,8 +37,8 @@ const RouteOptimizer: React.FC = () => {
   const searchInputRef = useRef<HTMLInputElement>(null);
   
   const [sidebarVisible, setSidebarVisible] = useState<boolean>(false);
-  const [, setSidebarMode] = useState<'added' | 'optimized'>('added');
-  const [, setSidebarAddresses] = useState<{ id: number; address: string }[]>([]);
+  const [sidebarMode, setSidebarMode] = useState<'added' | 'optimized'>('added');
+  const [sidebarAddresses, setSidebarAddresses] = useState<{ id: number; address: string }[]>([]);
 
 
   useEffect(() => {
@@ -334,11 +334,24 @@ const RouteOptimizer: React.FC = () => {
         </main>
 
         {sidebarVisible && (
-          <Sidebar
-            entries={addresses}
-            onRemove={handleRemoveFromSidebar}
-          />
-        )}
+            <Sidebar
+                headerText={
+                sidebarMode === 'added'
+                    ? 'Added Addresses'
+                    : 'Optimized Routes'
+                }
+                entries={
+                sidebarMode === 'added'
+                    ? sidebarAddresses   
+                    : sidebarAddresses 
+                }
+                onRemove={
+                sidebarMode === 'added'
+                    ? handleRemoveFromSidebar
+                    : undefined        
+                }
+            />
+            )}
       </div>
     </LoadScript>
   );
